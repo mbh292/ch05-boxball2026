@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.geom.*;
+import java.util.Random;
 
 /**
  * Class BoxBall - a graphical ball that moves similar to the ball in PONG.
@@ -18,12 +19,17 @@ import java.awt.geom.*;
  * @author David J. Barnes
  * @author Bruce Quig
  * @author William Crosbie
+ * @author Mustafa Has
  *
- * @version 2025.10.06
+ * @version 2026.11.01
  */
 
 public class BoxBall
 {
+    private static final int MAX_SPEED = 7;            // largest speed per tick
+    private static final int WALL_OFFSET = 1;          // gap between ball and wall
+    private static final Random rand = new Random();   // random number generator
+    
     private Box myBox;
 
     private Ellipse2D.Double circle;    // represents the ball
@@ -48,12 +54,19 @@ public class BoxBall
     public BoxBall(int xPos, int yPos, int ballDiameter, Color ballColor,
                         Box box, Canvas drawingCanvas)
     {
-        xPosition = xPos;
-        yPosition = yPos;
+        myBox = box;
+        
         color = ballColor;
         diameter = ballDiameter;
 
         canvas = drawingCanvas;
+        
+        xPosition = Math.max(minX(), Math.min(xPos, maxX()));
+        yPosition = Math.max(minY(), Math.min(yPos, maxY()));
+ 
+        xSpeed = randomSpeed();
+        ySpeed = randomSpeed();
+
     }
 
     /**
@@ -82,10 +95,28 @@ public class BoxBall
         erase();
             
         // compute new position
+        xPosition += xSpeed;
+        yPosition += ySpeed;
   
         // figure out if it has hit the left or right wall
+        if (xPosition < minX()) {
+            xPosition = minX() + (minX() - xPosition);   // bounce off left wall
+            xSpeed = -xSpeed;
+        }
+        else if (xPosition > maxX()) {
+            xPosition = maxX() - (xPosition - maxX());   // bounce off right wall
+            xSpeed = -xSpeed;
+        }
         
         // figure out if it has hit the top or bottom wall
+        if (yPosition < minY()) {
+            yPosition = minY() + (minY() - yPosition);   // bounce off top wall
+            ySpeed = -ySpeed;
+        }
+        else if (yPosition > maxY()) {
+            yPosition = maxY() - (yPosition - maxY());   // bounce off bottom wall
+            ySpeed = -ySpeed;
+        }
         
         draw();
     }    
@@ -104,5 +135,57 @@ public class BoxBall
     public int getYPosition()
     {
         return yPosition;
+    }
+
+    /**
+     * Pick a random speed for one axis.
+     * 
+     * @return a value from -7 to 7, never 0
+     */
+    private int randomSpeed()
+    {
+        int speed = rand.nextInt(MAX_SPEED) + 1;
+        if (rand.nextBoolean()) {
+            speed = -speed;
+        }
+        return speed;
+    }
+ 
+    /**
+     * @return the smallest x the ball may have
+     */
+    private int minX()
+    {
+        return myBox.getLeftWall() + WALL_OFFSET;
+    }
+ 
+    /**
+     * The ball's x is its left edge, so the limit on the right is offset
+     * by the diameter to keep the whole ball inside the wall.
+     * 
+     * @return the largest x the ball may have
+     */
+    private int maxX()
+    {
+        return myBox.getRightWall() - diameter - WALL_OFFSET;
+    }
+ 
+    /**
+     * @return the smallest y the ball may have
+     */
+    private int minY()
+    {
+        return myBox.getTopWall() + WALL_OFFSET;
+    }
+ 
+    /**
+     * The ball's y is its top edge, so the limit at the bottom is offset
+     * by the diameter to keep the whole ball inside the wall.
+     * 
+     * @return the largest y the ball may have
+     */
+    private int maxY()
+    {
+        return myBox.getBottomWall() - diameter - WALL_OFFSET;
     }
 }
